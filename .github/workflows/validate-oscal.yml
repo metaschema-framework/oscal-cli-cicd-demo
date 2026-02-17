@@ -40,7 +40,7 @@ jobs:
         run: |
           curl -fsSL -o oscal-cli.zip \
             "${OSCAL_CLI_BASE_URL}/${OSCAL_CLI_VERSION}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}-oscal-cli.zip"
-          unzip -q oscal-cli.zip
+          unzip -oq oscal-cli.zip
           chmod +x "oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin/oscal-cli"
           echo "${PWD}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin" >> "$GITHUB_PATH"
 
