@@ -94,16 +94,14 @@ jobs:
         run: |
           for sarif in sarif-results/*.sarif; do
             [ -f "$sarif" ] || continue
-            category=$(basename "$sarif" .sarif)
+
             encoded=$(gzip -c "$sarif" | base64 -w0)
 
-            echo "Uploading ${sarif} with category '${category}'"
+            echo "Uploading ${sarif}"
             gh api \
               --method POST \
-              "/repos/${{ github.repository }}/code-scanning/sarifs" \
+              "repos/${{ github.repository }}/code-scanning/sarifs" \
               -f "commit_sha=${{ github.sha }}" \
               -f "ref=${{ github.ref }}" \
-              -f "sarif=${encoded}" \
-              -f "checkout_uri=file://${{ github.workspace }}" \
-              -f "category=${category}" || true
+              -f "sarif=${encoded}" || true
           done
