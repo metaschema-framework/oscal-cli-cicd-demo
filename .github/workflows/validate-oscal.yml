@@ -40,9 +40,11 @@ jobs:
         run: |
           curl -fsSL -o oscal-cli.zip \
             "${OSCAL_CLI_BASE_URL}/${OSCAL_CLI_VERSION}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}-oscal-cli.zip"
-          unzip -oq oscal-cli.zip
-          chmod +x "oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin/oscal-cli"
-          echo "${PWD}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin" >> "$GITHUB_PATH"
+          mkdir -p oscal-cli-install
+          unzip -oq oscal-cli.zip -d oscal-cli-install
+          CLI_BIN=$(find oscal-cli-install -name "oscal-cli" -type f | head -1)
+          chmod +x "$CLI_BIN"
+          echo "$(dirname "$CLI_BIN")" >> "$GITHUB_PATH"
 
       - name: Verify oscal-cli installation
         run: oscal-cli --version
