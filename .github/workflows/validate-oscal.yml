@@ -68,12 +68,21 @@ jobs:
           done < <(find content -type f \( -name '*.json' -o -name '*.xml' -o -name '*.yaml' \))
 
           echo "Validated ${file_count} files."
+
+          # Ensure each SARIF file has a results array (required by upload-sarif)
+          for sarif in sarif-results/*.sarif; do
+            [ -f "$sarif" ] || continue
+            if ! jq -e '.runs[0].results' "$sarif" > /dev/null 2>&1; then
+              jq '.runs[0].results = []' "$sarif" > "${sarif}.tmp" && mv "${sarif}.tmp" "$sarif"
+            fi
+          done
+
           echo "Generated SARIF files:"
           ls -la sarif-results/
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('sarif-results/*.sarif') != ''
         with:
           sarif_file: sarif-results/
           category: oscal-validation
