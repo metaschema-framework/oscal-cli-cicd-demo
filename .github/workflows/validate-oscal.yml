@@ -69,12 +69,16 @@ jobs:
 
           echo "Validated ${file_count} files."
 
-          # Ensure each SARIF file has a results array (required by upload-sarif)
+          # Post-process each SARIF file:
+          # - Add empty results array if missing (required by code scanning)
+          # - Inject automationDetails.id so each file gets its own category
           for sarif in sarif-results/*.sarif; do
             [ -f "$sarif" ] || continue
-            if ! jq -e '.runs[0].results' "$sarif" > /dev/null 2>&1; then
-              jq '.runs[0].results = []' "$sarif" > "${sarif}.tmp" && mv "${sarif}.tmp" "$sarif"
-            fi
+            category=$(basename "$sarif" .sarif)
+            jq --arg cat "$category" '
+              .runs[0].results //= [] |
+              .runs[0].automationDetails = {"id": ($cat + "/")}
+            ' "$sarif" > "${sarif}.tmp" && mv "${sarif}.tmp" "$sarif"
           done
 
           echo "Generated SARIF files:"
