@@ -79,7 +79,8 @@ jobs:
             jq --arg cat "$category" '
               .runs[0].results //= [] |
               .runs[0].automationDetails = {"id": ($cat + "/")} |
-              .runs[0].artifacts[]?.location.uri |= ltrimstr("../")
+              .runs[0].artifacts[]?.location.uri |= ltrimstr("../") |
+              .runs[0].results[]?.locations[]?.physicalLocation.artifactLocation.uri |= ltrimstr("../")
             ' "$sarif" > "${sarif}.tmp" && mv "${sarif}.tmp" "$sarif"
           done
 
