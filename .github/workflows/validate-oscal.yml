@@ -54,30 +54,18 @@ jobs:
           mkdir -p sarif-results
           file_count=0
 
-          for model_dir in content/*/; do
-            [ -d "$model_dir" ] || continue
-            model=$(basename "$model_dir")
+          while IFS= read -r file; do
+            sarif_name=$(echo "$file" | sed 's|^content/||; s|/|-|g; s|\.[^.]*$||')
+            sarif_file="sarif-results/${sarif_name}.sarif"
 
-            for validity_dir in "${model_dir}"*/; do
-              [ -d "$validity_dir" ] || continue
-              validity=$(basename "$validity_dir")
+            echo "::group::Validating ${file}"
+            oscal-cli validate "$file" \
+              -o "$sarif_file" \
+              2>&1 || true
+            echo "::endgroup::"
 
-              for file in "${validity_dir}"*.json "${validity_dir}"*.xml "${validity_dir}"*.yaml; do
-                [ -f "$file" ] || continue
-
-                filename=$(basename "$file" | sed 's/\.[^.]*$//')
-                sarif_file="sarif-results/${model}-${validity}-${filename}.sarif"
-
-                echo "::group::Validating ${file}"
-                oscal-cli validate "$file" \
-                  -o "$sarif_file" \
-                  2>&1 || true
-                echo "::endgroup::"
-
-                file_count=$((file_count + 1))
-              done
-            done
-          done
+            file_count=$((file_count + 1))
+          done < <(find content -type f \( -name '*.json' -o -name '*.xml' -o -name '*.yaml' \))
 
           echo "Validated ${file_count} files."
           echo "Generated SARIF files:"
