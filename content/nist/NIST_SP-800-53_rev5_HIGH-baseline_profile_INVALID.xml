@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profile xmlns="http://csrc.nist.gov/ns/oscal/1.0"
+         uuid="a1b2c3d4-e5f6-4890-abcd-ef1234567890">
+  <metadata>
+    <title>Invalid HIGH Baseline Profile (Constraint Violations)</title>
+    <last-modified>2024-06-01T00:00:00Z</last-modified>
+    <version>1.0.0</version>
+    <oscal-version>1.1.2</oscal-version>
+    <role id="creator">
+      <title>Document Creator</title>
+    </role>
+    <party type="organization" uuid="11111111-1111-4111-8111-111111111111">
+      <name>Example Organization</name>
+    </party>
+    <!-- Constraint violation: responsible-party references a role-id that is not defined -->
+    <responsible-party role-id="non-existent-role">
+      <party-uuid>11111111-1111-4111-8111-111111111111</party-uuid>
+    </responsible-party>
+    <!-- Constraint violation: party-uuid references a party that does not exist -->
+    <responsible-party role-id="creator">
+      <party-uuid>99999999-9999-4999-a999-999999999999</party-uuid>
+    </responsible-party>
+  </metadata>
+  <import href="#84cbf061-eb87-4ec1-8112-1f529232e907">
+    <include-controls>
+      <with-id>ac-1</with-id>
+      <!-- Constraint violation: referencing a control that does not exist -->
+      <with-id>xx-99</with-id>
+      <with-id>zz-100</with-id>
+    </include-controls>
+  </import>
+  <back-matter>
+    <resource uuid="84cbf061-eb87-4ec1-8112-1f529232e907">
+      <description>
+        <p>NIST Special Publication 800-53 Revision 5</p>
+      </description>
+      <rlink media-type="application/oscal.catalog+xml"
+             href="../../../../nist.gov/SP800-53/rev5/xml/NIST_SP-800-53_rev5_catalog.xml"/>
+    </resource>
+  </back-matter>
+</profile>
