@@ -72,12 +72,14 @@ jobs:
           # Post-process each SARIF file:
           # - Add empty results array if missing (required by code scanning)
           # - Inject automationDetails.id so each file gets its own category
+          # - Rewrite artifact URIs to be relative to the repo root
           for sarif in sarif-results/*.sarif; do
             [ -f "$sarif" ] || continue
             category=$(basename "$sarif" .sarif)
             jq --arg cat "$category" '
               .runs[0].results //= [] |
-              .runs[0].automationDetails = {"id": ($cat + "/")}
+              .runs[0].automationDetails = {"id": ($cat + "/")} |
+              .runs[0].artifacts[]?.location.uri |= ltrimstr("../")
             ' "$sarif" > "${sarif}.tmp" && mv "${sarif}.tmp" "$sarif"
           done
 
