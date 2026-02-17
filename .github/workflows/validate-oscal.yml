@@ -1,0 +1,89 @@
+name: Validate OSCAL Content
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/**'
+      - '.github/workflows/validate-oscal.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'content/**'
+      - '.github/workflows/validate-oscal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  validate:
+    name: Validate OSCAL Documents
+    runs-on: ubuntu-latest
+
+    env:
+      OSCAL_CLI_VERSION: "3.1.0"
+      OSCAL_CLI_BASE_URL: "https://repo1.maven.org/maven2/dev/metaschema/oscal/oscal-cli-enhanced"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Download oscal-cli from Maven Central
+        run: |
+          curl -fsSL -o oscal-cli.zip \
+            "${OSCAL_CLI_BASE_URL}/${OSCAL_CLI_VERSION}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}-oscal-cli.zip"
+          unzip -q oscal-cli.zip
+          chmod +x "oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin/oscal-cli"
+          echo "${PWD}/oscal-cli-enhanced-${OSCAL_CLI_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Verify oscal-cli installation
+        run: oscal-cli --version
+
+      - name: Validate OSCAL content and generate SARIF
+        run: |
+          mkdir -p sarif-results
+          file_count=0
+
+          for model_dir in content/*/; do
+            [ -d "$model_dir" ] || continue
+            model=$(basename "$model_dir")
+
+            for validity_dir in "${model_dir}"*/; do
+              [ -d "$validity_dir" ] || continue
+              validity=$(basename "$validity_dir")
+
+              for file in "${validity_dir}"*.json "${validity_dir}"*.xml "${validity_dir}"*.yaml; do
+                [ -f "$file" ] || continue
+
+                filename=$(basename "$file" | sed 's/\.[^.]*$//')
+                sarif_file="sarif-results/${model}-${validity}-${filename}.sarif"
+
+                echo "::group::Validating ${file}"
+                oscal-cli validate "$file" \
+                  -o "$sarif_file" \
+                  2>&1 || true
+                echo "::endgroup::"
+
+                file_count=$((file_count + 1))
+              done
+            done
+          done
+
+          echo "Validated ${file_count} files."
+          echo "Generated SARIF files:"
+          ls -la sarif-results/
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sarif-results/
+          category: oscal-validation
