@@ -87,9 +87,23 @@ jobs:
           name: sarif-results
           path: sarif-results/
 
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('sarif-results/*.sarif') != ''
-        with:
-          sarif_file: sarif-results/
-          category: oscal-validation
+      - name: Upload SARIF results to GitHub Code Scanning
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for sarif in sarif-results/*.sarif; do
+            [ -f "$sarif" ] || continue
+            category=$(basename "$sarif" .sarif)
+            encoded=$(gzip -c "$sarif" | base64 -w0)
+
+            echo "Uploading ${sarif} with category '${category}'"
+            gh api \
+              --method POST \
+              "/repos/${{ github.repository }}/code-scanning/sarifs" \
+              -f "commit_sha=${{ github.sha }}" \
+              -f "ref=${{ github.ref }}" \
+              -f "sarif=${encoded}" \
+              -f "checkout_uri=file://${{ github.workspace }}" \
+              -f "category=${category}" || true
+          done
